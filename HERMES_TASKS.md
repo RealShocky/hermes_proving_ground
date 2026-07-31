@@ -24,7 +24,7 @@ Keep examples checked or inside prose so they are not executed accidentally.
 - [x] Add CLI command to list tasks with status filtering and tests
 - [ ] Add CLI command to mark a task done with tests
 - [ ] Add audit log model for task changes with append-only tests
-- [ ] Add health summary function reporting total and done task counts with tests
+- [x] Add health summary function reporting total and done task counts with tests
 - [ ] Add version endpoint helper returning app name, version, and build metadata with tests
 
 ## Phase 2 - API And UI, Locked Until 10/10
