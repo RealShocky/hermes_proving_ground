@@ -128,3 +128,44 @@ def test_main_list_invalid_status_returns_one() -> None:
     code = main(["list", "--status", "invalid"])
 
     assert code == 1
+
+
+def test_main_done_marks_task_done() -> None:
+    tasks = [
+        {"id": "t1", "title": "A", "status": "todo"},
+        {"id": "t2", "title": "B", "status": "in_progress"},
+    ]
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
+        json.dump(tasks, tmp)
+        tmp_path = tmp.name
+
+    code, output = _capture_stdout(["done", "t2", "--input", tmp_path])
+
+    assert code == 0
+    result = json.loads(output)
+    assert len(result) == 2
+    statuses = {item["id"]: item["status"] for item in result}
+    assert statuses["t1"] == "todo"
+    assert statuses["t2"] == "done"
+
+
+def test_main_done_task_not_found() -> None:
+    tasks = [
+        {"id": "t1", "title": "A", "status": "todo"},
+    ]
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
+        json.dump(tasks, tmp)
+        tmp_path = tmp.name
+
+    code = main(["done", "nonexistent", "--input", tmp_path])
+
+    assert code == 1
+
+
+def test_main_done_parses_args() -> None:
+    parser = build_parser()
+    args = parser.parse_args(["done", "t1", "--input", "tasks.json"])
+
+    assert args.command == "done"
+    assert args.task_id == "t1"
+    assert args.input_file == "tasks.json"

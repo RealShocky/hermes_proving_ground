@@ -50,6 +50,30 @@ def print_tasks(args: argparse.Namespace) -> int:
     return 0
 
 
+def mark_done(args: argparse.Namespace) -> int:
+    try:
+        tasks = _load_tasks(args.input_file)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+    task_id = args.task_id.strip()
+    found = False
+    result_tasks = []
+    for task in tasks:
+        if task.id == task_id:
+            task.status = "done"
+            found = True
+        result_tasks.append(task)
+
+    if not found:
+        print(f"error: task {task_id!r} not found", file=sys.stderr)
+        return 1
+
+    print(json.dumps([t.to_dict() for t in result_tasks], indent=2, sort_keys=True))
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="hpg",
@@ -75,6 +99,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="Path to a JSON file containing task objects",
     )
     list_parser.set_defaults(func=print_tasks)
+
+    done_parser = subparsers.add_parser("done", help="Mark a task as done")
+    done_parser.add_argument("task_id", help="Task ID to mark done")
+    done_parser.add_argument(
+        "--input",
+        dest="input_file",
+        required=True,
+        help="Path to a JSON file containing task objects",
+    )
+    done_parser.set_defaults(func=mark_done)
 
     return parser
 
