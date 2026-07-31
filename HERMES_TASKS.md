@@ -21,7 +21,7 @@ Keep examples checked or inside prose so they are not executed accidentally.
 - [ ] Add JSON file persistence adapter for tasks with deterministic temp-file tests
 - [ ] Add task status transition validation for todo, in_progress, blocked, done with tests
 - [x] Add CLI command to create a task and print JSON output with tests
-- [ ] Add CLI command to list tasks with status filtering and tests
+- [x] Add CLI command to list tasks with status filtering and tests
 - [ ] Add CLI command to mark a task done with tests
 - [ ] Add audit log model for task changes with append-only tests
 - [ ] Add health summary function reporting total and done task counts with tests
