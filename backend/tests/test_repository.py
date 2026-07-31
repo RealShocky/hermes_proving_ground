@@ -7,7 +7,7 @@ from app.repository import (
     TaskNotFoundError,
     TaskRepository,
 )
-from app.tasks import Task
+from app.tasks import Task, TaskTransitionError
 
 
 def _task(id: str, title: str = "Test task", status: str = "todo") -> Task:
@@ -77,11 +77,11 @@ def test_update_status() -> None:
     repo = TaskRepository()
     repo.create(_task("t1", "Pending", "todo"))
 
-    updated = repo.update("t1", status="done")
+    updated = repo.update("t1", status="in_progress")
 
-    assert updated.status == "done"
+    assert updated.status == "in_progress"
     assert updated.title == "Pending"
-    assert repo.get("t1").status == "done"
+    assert repo.get("t1").status == "in_progress"
 
 
 def test_update_title() -> None:
@@ -113,7 +113,7 @@ def test_update_preserves_created_at() -> None:
     repo = TaskRepository()
     repo.create(task)
 
-    updated = repo.update("t1", status="done")
+    updated = repo.update("t1", status="in_progress")
 
     assert updated.created_at == created
 
@@ -122,7 +122,7 @@ def test_update_raises_on_missing_task() -> None:
     repo = TaskRepository()
 
     with pytest.raises(TaskNotFoundError, match="not found"):
-        repo.update("no-such-id", status="done")
+        repo.update("no-such-id", status="in_progress")
 
 
 def test_update_validates_new_status() -> None:
@@ -139,6 +139,73 @@ def test_update_validates_new_title() -> None:
 
     with pytest.raises(ValueError, match="task title is required"):
         repo.update("t1", title="")
+
+
+# -- update transition validation --
+
+
+def test_update_allows_todo_to_in_progress() -> None:
+    repo = TaskRepository()
+    repo.create(_task("t1", "A", "todo"))
+
+    updated = repo.update("t1", status="in_progress")
+
+    assert updated.status == "in_progress"
+
+
+def test_update_allows_in_progress_to_done() -> None:
+    repo = TaskRepository()
+    repo.create(_task("t1", "A", "in_progress"))
+
+    updated = repo.update("t1", status="done")
+
+    assert updated.status == "done"
+
+
+def test_update_allows_todo_to_blocked() -> None:
+    repo = TaskRepository()
+    repo.create(_task("t1", "A", "todo"))
+
+    updated = repo.update("t1", status="blocked")
+
+    assert updated.status == "blocked"
+
+
+def test_update_allows_blocked_to_in_progress() -> None:
+    repo = TaskRepository()
+    repo.create(_task("t1", "A", "blocked"))
+
+    updated = repo.update("t1", status="in_progress")
+
+    assert updated.status == "in_progress"
+
+
+def test_update_allows_todo_to_done() -> None:
+    repo = TaskRepository()
+    repo.create(_task("t1", "A", "todo"))
+
+    updated = repo.update("t1", status="done")
+
+    assert updated.status == "done"
+
+
+def test_update_rejects_done_to_any_status() -> None:
+    repo = TaskRepository()
+    repo.create(_task("t1", "A", "done"))
+
+    for target in ("todo", "in_progress", "blocked"):
+        with pytest.raises(TaskTransitionError, match="cannot transition from 'done'"):
+            repo.update("t1", status=target)
+
+
+def test_update_preserves_status_on_title_only_change() -> None:
+    repo = TaskRepository()
+    repo.create(_task("t1", "Original", "in_progress"))
+
+    updated = repo.update("t1", title="Updated")
+
+    assert updated.title == "Updated"
+    assert updated.status == "in_progress"
 
 
 # -- list_tasks --
@@ -214,7 +281,7 @@ def test_full_create_get_update_list_workflow() -> None:
     found = repo.get("t1")
     assert found.title == "Write tests"
 
-    # Update
+    # Update with valid transition
     updated = repo.update("t1", status="in_progress")
     assert updated.status == "in_progress"
 

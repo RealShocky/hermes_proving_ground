@@ -2,10 +2,25 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from typing import FrozenSet
 from uuid import uuid4
 
 
 VALID_TASK_STATUSES = frozenset({"todo", "in_progress", "blocked", "done"})
+
+# Valid status transitions: current_status -> set of allowed next statuses.
+# "done" is terminal -- no outgoing transitions.
+VALID_TRANSITIONS: dict[str, FrozenSet[str]] = {
+    "todo": frozenset({"in_progress", "blocked", "done"}),
+    "in_progress": frozenset({"done", "blocked", "todo"}),
+    "blocked": frozenset({"in_progress", "todo", "done"}),
+    "done": frozenset(),
+}
+
+
+class TaskTransitionError(ValueError):
+    """Raised when a task status transition is not allowed."""
+    pass
 
 
 def _utc_now() -> datetime:
@@ -27,6 +42,19 @@ def _normalize_status(value: str) -> str:
     return status
 
 
+def validate_transition(current_status: str, new_status: str) -> None:
+    """Raise TaskTransitionError if transitioning from current_status to new_status is invalid."""
+    current_status = _normalize_status(current_status)
+    new_status = _normalize_status(new_status)
+    if current_status == new_status:
+        return
+    allowed = VALID_TRANSITIONS.get(current_status, frozenset())
+    if new_status not in allowed:
+        raise TaskTransitionError(
+            f"cannot transition from {current_status!r} to {new_status!r}"
+        )
+
+
 @dataclass(slots=True)
 class Task:
     title: str
@@ -44,6 +72,11 @@ class Task:
         if not str(self.id).strip():
             raise ValueError("task id is required")
         self.id = str(self.id).strip()
+
+    def transition_to(self, new_status: str) -> None:
+        """Update status after validating the transition is allowed."""
+        validate_transition(self.status, new_status)
+        self.status = new_status
 
     def to_dict(self) -> dict[str, str]:
         return {
