@@ -1,0 +1,9 @@
+[project]
+name = "hermes-proving-ground"
+version = "0.1.0"
+description = "Clean-room autonomous delivery proving ground for Hermes."
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+pythonpath = ["backend"]
+testpaths = ["backend/tests"]

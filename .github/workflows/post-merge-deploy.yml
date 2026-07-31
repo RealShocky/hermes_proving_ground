@@ -1,0 +1,27 @@
+name: post-merge-deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependencies
+        run: python -m pip install --upgrade pip pytest
+
+      - name: Validate deployable package
+        run: python -m pytest backend/tests --tb=short -p no:cacheprovider
+
+      - name: Healthcheck
+        run: PYTHONPATH=backend python -m app.health_server --check
