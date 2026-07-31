@@ -4,7 +4,13 @@ from datetime import UTC, datetime
 
 import pytest
 
-from app.tasks import Task, VALID_TASK_STATUSES
+from app.tasks import (
+    Task,
+    VALID_TASK_STATUSES,
+    VALID_TRANSITIONS,
+    TaskTransitionError,
+    validate_transition,
+)
 
 
 def test_task_defaults_to_todo_with_generated_id() -> None:
@@ -59,3 +65,89 @@ def test_task_round_trips_to_dict() -> None:
 
 def test_valid_statuses_are_intentional() -> None:
     assert VALID_TASK_STATUSES == frozenset({"todo", "in_progress", "blocked", "done"})
+
+
+# -- Transition validation --
+
+
+def test_valid_transitions_covers_all_statuses() -> None:
+    assert set(VALID_TRANSITIONS) == VALID_TASK_STATUSES
+
+
+def test_validate_transition_allows_same_status() -> None:
+    validate_transition("todo", "todo")
+
+
+def test_validate_transition_todo_to_in_progress() -> None:
+    validate_transition("todo", "in_progress")
+
+
+def test_validate_transition_todo_to_blocked() -> None:
+    validate_transition("todo", "blocked")
+
+
+def test_validate_transition_todo_to_done() -> None:
+    validate_transition("todo", "done")
+
+
+def test_validate_transition_in_progress_to_done() -> None:
+    validate_transition("in_progress", "done")
+
+
+def test_validate_transition_in_progress_to_blocked() -> None:
+    validate_transition("in_progress", "blocked")
+
+
+def test_validate_transition_in_progress_to_todo() -> None:
+    validate_transition("in_progress", "todo")
+
+
+def test_validate_transition_blocked_to_in_progress() -> None:
+    validate_transition("blocked", "in_progress")
+
+
+def test_validate_transition_blocked_to_todo() -> None:
+    validate_transition("blocked", "todo")
+
+
+def test_validate_transition_blocked_to_done() -> None:
+    validate_transition("blocked", "done")
+
+
+def test_validate_transition_done_is_terminal() -> None:
+    for target in VALID_TASK_STATUSES:
+        if target == "done":
+            continue
+        with pytest.raises(TaskTransitionError, match="cannot transition from 'done'"):
+            validate_transition("done", target)
+
+
+def test_validate_transition_raises_on_unknown_source() -> None:
+    with pytest.raises(ValueError, match="invalid task status"):
+        validate_transition("unknown", "todo")
+
+
+def test_validate_transition_raises_on_unknown_target() -> None:
+    with pytest.raises(ValueError, match="invalid task status"):
+        validate_transition("todo", "unknown")
+
+
+# -- Task.transition_to --
+
+
+def test_task_transition_to_valid() -> None:
+    task = Task(id="t1", title="Demo", status="todo")
+    task.transition_to("in_progress")
+    assert task.status == "in_progress"
+
+
+def test_task_transition_to_invalid_raises() -> None:
+    task = Task(id="t1", title="Demo", status="done")
+    with pytest.raises(TaskTransitionError, match="cannot transition from 'done'"):
+        task.transition_to("todo")
+
+
+def test_task_transition_to_same_status_is_noop() -> None:
+    task = Task(id="t1", title="Demo", status="todo")
+    task.transition_to("todo")
+    assert task.status == "todo"

@@ -19,7 +19,7 @@ Keep examples checked or inside prose so they are not executed accidentally.
 - [x] Add task model dataclass with id, title, status, created_at, and focused tests
 - [ ] Add in-memory task repository with create, list, get, and update operations plus tests
 - [ ] Add JSON file persistence adapter for tasks with deterministic temp-file tests
-- [ ] Add task status transition validation for todo, in_progress, blocked, done with tests
+- [x] Add task status transition validation for todo, in_progress, blocked, done with tests
 - [x] Add CLI command to create a task and print JSON output with tests
 - [x] Add CLI command to list tasks with status filtering and tests
 - [x] Add CLI command to mark a task done with tests

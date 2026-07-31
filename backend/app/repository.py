@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Sequence
 
-from app.tasks import Task
+from app.tasks import Task, validate_transition
 
 
 class TaskNotFoundError(ValueError):
@@ -40,8 +40,12 @@ class TaskRepository:
 
         Returns the updated task. Raises TaskNotFoundError if the id does not exist.
         Validation errors are raised by the Task dataclass itself.
+        Status transitions are validated against VALID_TRANSITIONS rules.
         """
         current = self.get(task_id)
+
+        if status is not None:
+            validate_transition(current.status, status)
 
         new_title = title if title is not None else current.title
         new_status = status if status is not None else current.status
