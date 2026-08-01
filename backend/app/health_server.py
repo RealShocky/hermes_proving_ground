@@ -3,9 +3,15 @@ from __future__ import annotations
 import argparse
 import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 
 from app.api.version import version_payload
 from app.core import health_payload
+
+# Path to the static dashboard HTML relative to this file.
+_FRONTEND_DIR = Path(__file__).resolve().parent.parent.parent / "frontend"
+_DASHBOARD_PATH = _FRONTEND_DIR / "dashboard.html"
+_DASHBOARD_HTML = _DASHBOARD_PATH.read_text(encoding="utf-8") if _DASHBOARD_PATH.exists() else ""
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -22,6 +28,14 @@ class Handler(BaseHTTPRequestHandler):
             body = json.dumps(version_payload(), sort_keys=True).encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+        if self.path == "/dashboard":
+            body = _DASHBOARD_HTML.encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
