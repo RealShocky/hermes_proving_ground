@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Dashboard</title>
+    <style>
+        body {
+            font-family: monospace;
+            max-width: 480px;
+            margin: 40px auto;
+            padding: 0 16px;
+            background: #1a1a2e;
+            color: #e0e0e0;
+        }
+        h1 {
+            font-size: 1.2em;
+            margin-bottom: 24px;
+        }
+        .card {
+            background: #16213e;
+            border: 1px solid #0f3460;
+            border-radius: 4px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .count {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        .total {
+            border-color: #533483;
+        }
+        #error {
+            color: #e94560;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Task Dashboard</h1>
+    <div id="error">Failed to load task data.</div>
+    <div class="card total">
+        <span>Total</span>
+        <span class="count" id="total">-</span>
+    </div>
+    <div class="card">
+        <span>Todo</span>
+        <span class="count" id="todo">-</span>
+    </div>
+    <div class="card">
+        <span>In Progress</span>
+        <span class="count" id="in_progress">-</span>
+    </div>
+    <div class="card">
+        <span>Blocked</span>
+        <span class="count" id="blocked">-</span>
+    </div>
+    <div class="card">
+        <span>Done</span>
+        <span class="count" id="done">-</span>
+    </div>
+    <script>
+        fetch("/api/tasks")
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var counts = {todo: 0, in_progress: 0, blocked: 0, done: 0};
+                var tasks = data.tasks || data;
+                if (Array.isArray(tasks)) {
+                    tasks.forEach(function(t) {
+                        if (counts.hasOwnProperty(t.status)) {
+                            counts[t.status]++;
+                        }
+                    });
+                } else if (data.total !== undefined) {
+                    document.getElementById("total").textContent = data.total;
+                    document.getElementById("done").textContent = data.done;
+                    return;
+                }
+                document.getElementById("total").textContent =
+                    counts.todo + counts.in_progress + counts.blocked + counts.done;
+                document.getElementById("todo").textContent = counts.todo;
+                document.getElementById("in_progress").textContent = counts.in_progress;
+                document.getElementById("blocked").textContent = counts.blocked;
+                document.getElementById("done").textContent = counts.done;
+            })
+            .catch(function() {
+                document.getElementById("error").style.display = "block";
+            });
+    </script>
+</body>
+</html>
