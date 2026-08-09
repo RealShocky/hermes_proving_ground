@@ -6,7 +6,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from app.api.tasks import list_tasks_payload
+from app.api.tasks import create_task_payload, list_tasks_payload
 from app.api.version import version_payload
 from app.core import health_payload
 from app.repository import TaskRepository
@@ -63,6 +63,75 @@ def _make_handler(repo: TaskRepository):
             self.send_response(404)
             self.end_headers()
 
+        def do_POST(self) -> None:
+            if self.path == "/tasks":
+                self._handle_create_task()
+                return
+            self.send_response(404)
+            self.end_headers()
+
+        def _handle_create_task(self) -> None:
+            """Handle POST /tasks to create a new task."""
+            from app.tasks import Task
+
+            content_length = int(self.headers.get("Content-Length", 0))
+            if content_length == 0:
+                body_bytes = b""
+            else:
+                body_bytes = self.rfile.read(content_length)
+
+            try:
+                data = json.loads(body_bytes) if body_bytes else {}
+            except json.JSONDecodeError:
+                error_body = json.dumps({"error": "invalid JSON"}, sort_keys=True)
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(error_body.encode("utf-8"))))
+                self.end_headers()
+                self.wfile.write(error_body.encode("utf-8"))
+                return
+
+            if not isinstance(data, dict):
+                error_body = json.dumps({"error": "request body must be a JSON object"}, sort_keys=True)
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(error_body.encode("utf-8"))))
+                self.end_headers()
+                self.wfile.write(error_body.encode("utf-8"))
+                return
+
+            title = data.get("title")
+            if not title or not str(title).strip():
+                error_body = json.dumps({"error": "task title is required"}, sort_keys=True)
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(error_body.encode("utf-8"))))
+                self.end_headers()
+                self.wfile.write(error_body.encode("utf-8"))
+                return
+
+            status = data.get("status", "todo")
+            try:
+                task = Task(title=str(title), status=str(status))
+            except ValueError as exc:
+                error_body = json.dumps({"error": str(exc)}, sort_keys=True)
+                self.send_response(400)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(error_body.encode("utf-8"))))
+                self.end_headers()
+                self.wfile.write(error_body.encode("utf-8"))
+                return
+
+            # Persist in the repository
+            self.repo_ref.create(task)
+
+            body = json.dumps(create_task_payload(task), sort_keys=True).encode("utf-8")
+            self.send_response(201)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
         def log_message(self, format: str, *args: object) -> None:
             return
 
@@ -97,4 +166,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
