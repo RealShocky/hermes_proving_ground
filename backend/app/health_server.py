@@ -4,47 +4,75 @@ import argparse
 import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from typing import TYPE_CHECKING
 
+from app.api.tasks import list_tasks_payload
 from app.api.version import version_payload
 from app.core import health_payload
+from app.repository import TaskRepository
 
 # Path to the static dashboard HTML relative to this file.
 _FRONTEND_DIR = Path(__file__).resolve().parent.parent.parent / "frontend"
 _DASHBOARD_PATH = _FRONTEND_DIR / "dashboard.html"
 _DASHBOARD_HTML = _DASHBOARD_PATH.read_text(encoding="utf-8") if _DASHBOARD_PATH.exists() else ""
 
+if TYPE_CHECKING:
+    pass
 
-class Handler(BaseHTTPRequestHandler):
-    def do_GET(self) -> None:
-        if self.path in {"/", "/healthz"}:
-            body = json.dumps(health_payload(), sort_keys=True).encode("utf-8")
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
-            return
-        if self.path == "/version":
-            body = json.dumps(version_payload(), sort_keys=True).encode("utf-8")
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
-            return
-        if self.path == "/dashboard":
-            body = _DASHBOARD_HTML.encode("utf-8")
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
-            return
-        self.send_response(404)
-        self.end_headers()
 
-    def log_message(self, format: str, *args: object) -> None:
-        return
+def _make_handler(repo: TaskRepository):
+    """Return a Handler class bound to the given TaskRepository."""
+
+    class Handler(BaseHTTPRequestHandler):
+        repo_ref: TaskRepository  # type: ignore[misc]
+
+        def do_GET(self) -> None:
+            if self.path in {"/", "/healthz"}:
+                body = json.dumps(health_payload(), sort_keys=True).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+            if self.path == "/version":
+                body = json.dumps(version_payload(), sort_keys=True).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+            if self.path == "/tasks":
+                tasks = self.repo_ref.list_tasks()
+                body = json.dumps(list_tasks_payload(tasks), sort_keys=True).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+            if self.path == "/dashboard":
+                body = _DASHBOARD_HTML.encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+            self.send_response(404)
+            self.end_headers()
+
+        def log_message(self, format: str, *args: object) -> None:
+            return
+
+    # Bind the repo as a class attribute after class creation.
+    Handler.repo_ref = repo  # type: ignore[attr-defined]
+    return Handler
+
+
+# Default handler for backward compatibility (no repo).
+Handler = _make_handler(TaskRepository())
 
 
 def main() -> int:
@@ -69,3 +97,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

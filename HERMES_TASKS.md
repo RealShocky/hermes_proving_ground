@@ -29,7 +29,7 @@ Keep examples checked or inside prose so they are not executed accidentally.
 
 ## Phase 2 - API And UI, Locked Until 10/10
 
-- [ ] Add stdlib HTTP API route for listing tasks
+- [x] Add stdlib HTTP API route for listing tasks
 - [ ] Add stdlib HTTP API route for creating tasks
 - [x] Add minimal static HTML dashboard showing task counts
 - [ ] Add API healthcheck that includes version and task summary
