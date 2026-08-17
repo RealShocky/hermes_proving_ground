@@ -216,6 +216,80 @@ def test_post_unknown_path_returns_404() -> None:
         server.shutdown()
 
 
+# -- /healthcheck tests --
+
+
+def test_healthcheck_endpoint_returns_version_and_task_summary() -> None:
+    """GET /healthcheck returns version info plus a task summary."""
+    repo = TaskRepository()
+    repo.create(Task(id="h1", title="First", status="todo"))
+    repo.create(Task(id="h2", title="Second", status="done"))
+    repo.create(Task(id="h3", title="Third", status="in_progress"))
+    server, port = _start_server(repo)
+    try:
+        response, data = _get_json(port, "/healthcheck")
+
+        assert response == 200
+        assert data == {
+            "app": "Hermes Proving Ground",
+            "version": "0.1.0",
+            "build": "",
+            "status": "ok",
+            "tasks": {"total": 3, "done": 1},
+        }
+    finally:
+        server.shutdown()
+
+
+def test_healthcheck_endpoint_empty_repo() -> None:
+    """GET /healthcheck reports a zero task summary when no tasks exist."""
+    repo = TaskRepository()
+    server, port = _start_server(repo)
+    try:
+        response, data = _get_json(port, "/healthcheck")
+
+        assert response == 200
+        assert data["status"] == "ok"
+        assert data["app"] == "Hermes Proving Ground"
+        assert data["version"] == "0.1.0"
+        assert data["tasks"] == {"total": 0, "done": 0}
+    finally:
+        server.shutdown()
+
+
+def test_healthcheck_endpoint_reflects_new_task() -> None:
+    """GET /healthcheck task summary updates after POST /tasks."""
+    repo = TaskRepository()
+    server, port = _start_server(repo)
+    try:
+        status, created = _post_json(port, "/tasks", {"title": "Fresh"})
+        assert status == 201
+
+        response, data = _get_json(port, "/healthcheck")
+        assert response == 200
+        assert data["tasks"] == {"total": 1, "done": 0}
+    finally:
+        server.shutdown()
+
+
+def test_healthcheck_endpoint_json_content_type() -> None:
+    """GET /healthcheck responds with application/json."""
+    repo = TaskRepository()
+    server, port = _start_server(repo)
+    try:
+        conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+        conn.request("GET", "/healthcheck")
+        response = conn.getresponse()
+        response.read()
+        content_type = response.getheader("Content-Type")
+        conn.close()
+
+        assert response.status == 200
+        assert content_type == "application/json"
+    finally:
+        server.shutdown()
+
+
 # -- helpers --
 
 

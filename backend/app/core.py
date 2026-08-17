@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Sequence
 
 from app import APP_NAME, APP_VERSION
+from app.api.version import version_payload
 from app.tasks import Task
 
 
@@ -45,3 +46,15 @@ def health_summary_payload(tasks: Sequence[Task]) -> dict[str, int]:
         "total": summary.total,
         "done": summary.done,
     }
+
+
+def healthcheck_payload(tasks: Sequence[Task]) -> dict[str, object]:
+    """Compose an API healthcheck payload that includes version and task summary.
+
+    Merges the version payload (app, version, build) with the health payload
+    (status) and the task summary (total, done).
+    """
+    payload: dict[str, object] = dict(version_payload())
+    payload.update(health_payload())
+    payload["tasks"] = health_summary_payload(tasks)
+    return payload
