@@ -1,0 +1,22 @@
+# Hermes Proving Ground - local compose file.
+#
+# Brings up the stdlib HTTP service so the dashboard, API, and healthcheck are
+# reachable on the host. No external services, no databases, no secrets.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: hermes-proving-ground:latest
+    container_name: hermes-proving-ground
+    ports:
+      - "8765:8765"
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "python", "-m", "app.health_server", "--check"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
