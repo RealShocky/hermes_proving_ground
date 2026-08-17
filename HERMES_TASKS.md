@@ -32,7 +32,7 @@ Keep examples checked or inside prose so they are not executed accidentally.
 - [x] Add stdlib HTTP API route for listing tasks
 - [x] Add stdlib HTTP API route for creating tasks
 - [x] Add minimal static HTML dashboard showing task counts
-- [ ] Add API healthcheck that includes version and task summary
+- [x] Add API healthcheck that includes version and task summary
 
 ## Phase 3 - Controlled Complexity, Locked Until Phase 2
 

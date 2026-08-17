@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 from app.api.tasks import create_task_payload, list_tasks_payload
 from app.api.version import version_payload
-from app.core import health_payload
+from app.core import health_payload, healthcheck_payload
 from app.repository import TaskRepository
 
 # Path to the static dashboard HTML relative to this file.
@@ -46,6 +46,15 @@ def _make_handler(repo: TaskRepository):
             if self.path == "/tasks":
                 tasks = self.repo_ref.list_tasks()
                 body = json.dumps(list_tasks_payload(tasks), sort_keys=True).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+            if self.path == "/healthcheck":
+                tasks = self.repo_ref.list_tasks()
+                body = json.dumps(healthcheck_payload(tasks), sort_keys=True).encode("utf-8")
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
                 self.send_header("Content-Length", str(len(body)))

@@ -5,6 +5,7 @@ from app.core import (
     health_payload,
     health_summary,
     health_summary_payload,
+    healthcheck_payload,
 )
 from app.tasks import Task
 
@@ -80,3 +81,27 @@ def test_health_summary_payload() -> None:
     payload = health_summary_payload(tasks)
 
     assert payload == {"total": 2, "done": 1}
+
+
+def test_healthcheck_payload_includes_version_and_task_summary() -> None:
+    tasks = [
+        Task(id="t1", title="A", status="todo"),
+        Task(id="t2", title="B", status="done"),
+    ]
+
+    payload = healthcheck_payload(tasks)
+
+    assert payload == {
+        "app": "Hermes Proving Ground",
+        "version": "0.1.0",
+        "build": "",
+        "status": "ok",
+        "tasks": {"total": 2, "done": 1},
+    }
+
+
+def test_healthcheck_payload_empty_tasks() -> None:
+    payload = healthcheck_payload([])
+
+    assert payload["tasks"] == {"total": 0, "done": 0}
+    assert payload["status"] == "ok"
