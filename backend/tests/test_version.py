@@ -38,6 +38,19 @@ def test_version_payload_has_all_keys() -> None:
     assert "build" in payload
 
 
+def test_version_build_tracks_build_metadata(monkeypatch) -> None:
+    monkeypatch.setattr("app.api.version.BUILD_METADATA", "20260818T031317Z")
+
+    info = version_info()
+    payload = version_payload()
+
+    assert info.build == "20260818T031317Z"
+    assert payload["build"] == "20260818T031317Z"
+
+    monkeypatch.undo()
+    assert version_info().build == ""
+
+
 def test_version_info_is_frozen() -> None:
     info = version_info()
 
