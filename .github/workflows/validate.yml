@@ -14,12 +14,24 @@ jobs:
       - name: Lint
         shell: powershell
         run: |
-            powershell -NoProfile -Command "$ErrorActionPreference = 'Stop'; $env:PYTHONPATH='backend'; py -3.11 -m pytest backend/tests/test_core.py --tb=short -p no:cacheprovider"
+            $ErrorActionPreference = 'Stop'
+            $env:PYTHONPATH='backend'
+            py -3.11 -m pytest backend/tests/test_core.py --tb=short -p no:cacheprovider
       - name: Test
         shell: powershell
         run: |
-            powershell -NoProfile -Command "$ErrorActionPreference = 'Stop'; $env:PYTHONPATH='backend'; py -3.11 -m pytest backend/tests --tb=short -p no:cacheprovider; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; py -3.11 -m app.health_server --check; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }"
+            $ErrorActionPreference = 'Stop'
+            $env:PYTHONPATH='backend'
+            py -3.11 -m pytest backend/tests --tb=short -p no:cacheprovider
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            py -3.11 -m app.health_server --check
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Build
         shell: powershell
         run: |
-            powershell -NoProfile -Command "$ErrorActionPreference = 'Stop'; $env:PYTHONPATH='backend'; py -3.11 -m compileall backend/app; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; py -3.11 -m pytest backend/tests --tb=short -p no:cacheprovider; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }"
+            $ErrorActionPreference = 'Stop'
+            $env:PYTHONPATH='backend'
+            py -3.11 -m compileall backend/app
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+            py -3.11 -m pytest backend/tests --tb=short -p no:cacheprovider
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

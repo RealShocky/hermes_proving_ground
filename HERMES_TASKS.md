@@ -36,6 +36,6 @@ Keep examples checked or inside prose so they are not executed accidentally.
 
 ## Phase 3 - Controlled Complexity, Locked Until Phase 2
 
-- [ ] Add SQLite persistence adapter with migration tests
+- [x] Add SQLite persistence adapter with migration tests
 - [x] Add Dockerfile and compose file with validation workflow coverage
 - [ ] Add post-merge local deployment helper with pidfile cleanup
