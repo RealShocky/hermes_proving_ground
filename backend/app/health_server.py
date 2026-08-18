@@ -20,6 +20,11 @@ if TYPE_CHECKING:
     pass
 
 
+def version_endpoint_body() -> bytes:
+    """Build the JSON body served by the /version endpoint."""
+    return json.dumps(version_payload(), sort_keys=True).encode("utf-8")
+
+
 def _make_handler(repo: TaskRepository):
     """Return a Handler class bound to the given TaskRepository."""
 
@@ -36,7 +41,7 @@ def _make_handler(repo: TaskRepository):
                 self.wfile.write(body)
                 return
             if self.path == "/version":
-                body = json.dumps(version_payload(), sort_keys=True).encode("utf-8")
+                body = version_endpoint_body()
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
                 self.send_header("Content-Length", str(len(body)))

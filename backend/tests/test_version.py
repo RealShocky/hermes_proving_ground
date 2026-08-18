@@ -7,7 +7,7 @@ import threading
 import time
 
 from app.api.version import VersionInfo, version_info, version_payload
-from app.health_server import Handler, ThreadingHTTPServer
+from app.health_server import Handler, ThreadingHTTPServer, version_endpoint_body
 
 
 def test_version_info_returns_app_and_version() -> None:
@@ -86,6 +86,26 @@ def test_version_endpoint_unknown_path_returns_404() -> None:
         conn.close()
 
         assert response.status == 404
+    finally:
+        server.shutdown()
+
+
+def test_version_endpoint_body_matches_live_endpoint() -> None:
+    expected = json.dumps(version_payload(), sort_keys=True).encode("utf-8")
+
+    assert version_endpoint_body() == expected
+    assert json.loads(expected.decode("utf-8")) == version_payload()
+
+    server, port = _start_server()
+    try:
+        conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+        conn.request("GET", "/version")
+        response = conn.getresponse()
+        body = response.read()
+        conn.close()
+
+        assert response.status == 200
+        assert body == version_endpoint_body()
     finally:
         server.shutdown()
 
