@@ -6,8 +6,13 @@ import socket
 import threading
 import time
 
-from app.api.version import VersionInfo, version_info, version_payload
-from app.health_server import Handler, ThreadingHTTPServer, version_endpoint_body
+from app.api.version import (
+    VersionInfo,
+    version_endpoint_body,
+    version_info,
+    version_payload,
+)
+from app.health_server import Handler, ThreadingHTTPServer
 
 
 def test_version_info_returns_app_and_version() -> None:

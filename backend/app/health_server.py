@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from app.api.tasks import create_task_payload, list_tasks_payload
-from app.api.version import version_payload
+from app.api.version import version_endpoint_body, version_payload
 from app.core import health_payload, healthcheck_payload
 from app.repository import TaskRepository
 
@@ -18,11 +18,6 @@ _DASHBOARD_HTML = _DASHBOARD_PATH.read_text(encoding="utf-8") if _DASHBOARD_PATH
 
 if TYPE_CHECKING:
     pass
-
-
-def version_endpoint_body() -> bytes:
-    """Build the JSON body served by the /version endpoint."""
-    return json.dumps(version_payload(), sort_keys=True).encode("utf-8")
 
 
 def _make_handler(repo: TaskRepository):
