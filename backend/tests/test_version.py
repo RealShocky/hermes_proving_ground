@@ -6,7 +6,12 @@ import socket
 import threading
 import time
 
-from app.api.version import VersionInfo, version_info, version_payload
+from app.api.version import (
+    VersionInfo,
+    version_endpoint_body,
+    version_info,
+    version_payload,
+)
 from app.health_server import Handler, ThreadingHTTPServer
 
 
@@ -36,6 +41,19 @@ def test_version_payload_has_all_keys() -> None:
     assert "app" in payload
     assert "version" in payload
     assert "build" in payload
+
+
+def test_version_build_tracks_build_metadata(monkeypatch) -> None:
+    monkeypatch.setattr("app.api.version.BUILD_METADATA", "20260818T031317Z")
+
+    info = version_info()
+    payload = version_payload()
+
+    assert info.build == "20260818T031317Z"
+    assert payload["build"] == "20260818T031317Z"
+
+    monkeypatch.undo()
+    assert version_info().build == ""
 
 
 def test_version_info_is_frozen() -> None:
@@ -73,6 +91,26 @@ def test_version_endpoint_unknown_path_returns_404() -> None:
         conn.close()
 
         assert response.status == 404
+    finally:
+        server.shutdown()
+
+
+def test_version_endpoint_body_matches_live_endpoint() -> None:
+    expected = json.dumps(version_payload(), sort_keys=True).encode("utf-8")
+
+    assert version_endpoint_body() == expected
+    assert json.loads(expected.decode("utf-8")) == version_payload()
+
+    server, port = _start_server()
+    try:
+        conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+        conn.request("GET", "/version")
+        response = conn.getresponse()
+        body = response.read()
+        conn.close()
+
+        assert response.status == 200
+        assert body == version_endpoint_body()
     finally:
         server.shutdown()
 

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from app.api.tasks import create_task_payload, list_tasks_payload
-from app.api.version import version_payload
+from app.api.version import version_endpoint_body, version_payload
 from app.core import health_payload, healthcheck_payload
 from app.repository import TaskRepository
 
@@ -36,7 +36,7 @@ def _make_handler(repo: TaskRepository):
                 self.wfile.write(body)
                 return
             if self.path == "/version":
-                body = json.dumps(version_payload(), sort_keys=True).encode("utf-8")
+                body = version_endpoint_body()
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
                 self.send_header("Content-Length", str(len(body)))
