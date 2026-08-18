@@ -157,6 +157,13 @@ def stop_server(pidfile: Path, timeout: float = STOP_TIMEOUT) -> int | None:
 
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
+        if os.name != "nt":
+            try:
+                waited_pid, _status = os.waitpid(pid, os.WNOHANG)
+                if waited_pid == pid:
+                    break
+            except ChildProcessError:
+                pass
         if not pid_exists(pid):
             break
         time.sleep(0.1)
@@ -175,6 +182,10 @@ def stop_server(pidfile: Path, timeout: float = STOP_TIMEOUT) -> int | None:
             try:
                 os.kill(pid, signal.SIGKILL)
             except (ProcessLookupError, OSError):
+                pass
+            try:
+                os.waitpid(pid, 0)
+            except ChildProcessError:
                 pass
 
     cleanup_stale_pidfile(pidfile)
